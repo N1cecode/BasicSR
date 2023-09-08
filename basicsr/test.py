@@ -1,6 +1,7 @@
 import logging
 import torch
 from os import path as osp
+import torchvision
 
 from basicsr.data import build_dataloader, build_dataset
 from basicsr.models import build_model
@@ -41,5 +42,6 @@ def test_pipeline(root_path):
 
 
 if __name__ == '__main__':
+    torchvision.disable_beta_transforms_warning()
     root_path = osp.abspath(osp.join(__file__, osp.pardir, osp.pardir))
     test_pipeline(root_path)

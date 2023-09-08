@@ -4,6 +4,7 @@ import math
 import time
 import torch
 from os import path as osp
+import torchvision
 
 from basicsr.data import build_dataloader, build_dataset
 from basicsr.data.data_sampler import EnlargedSampler
@@ -211,5 +212,6 @@ def train_pipeline(root_path):
 
 
 if __name__ == '__main__':
+    torchvision.disable_beta_transforms_warning()
     root_path = osp.abspath(osp.join(__file__, osp.pardir, osp.pardir))
     train_pipeline(root_path)
