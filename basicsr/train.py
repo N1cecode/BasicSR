@@ -212,6 +212,6 @@ def train_pipeline(root_path):
 
 
 if __name__ == '__main__':
-    torchvision.disable_beta_transforms_warning()
+    # torchvision.disable_beta_transforms_warning()
     root_path = osp.abspath(osp.join(__file__, osp.pardir, osp.pardir))
     train_pipeline(root_path)
