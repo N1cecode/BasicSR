@@ -1,5 +1,5 @@
-# Light weight
-name: train_SwinIR_Modified_light_SRx2_scratch_P48W8_DIV2K_500k_B32G1
+# general settings
+name: train_SRFormer_light_Modified_SRx2_scratch_bs8_lr1_2080tix4
 model_type: SwinIRModel
 
 scale: 2
@@ -18,13 +18,14 @@ datasets:
     io_backend:
       type: disk
 
-    gt_size: 96
+    gt_size: 128
     use_hflip: true
     use_rot: true
 
     # data loader
+    use_shuffle: true
     num_worker_per_gpu: 6
-    batch_size_per_gpu: 32
+    batch_size_per_gpu: 8
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
@@ -44,13 +45,14 @@ datasets:
     io_backend:
       type: disk
 
+
 # network structures
 network_g:
-  type: SwinIR
+  type: SRFormer_Modified
   upscale: 2
   in_chans: 3
-  img_size: 48
-  window_size: 8
+  img_size: 64
+  window_size: 16
   img_range: 1.
   depths: [6, 6, 6, 6]
   embed_dim: 60
@@ -59,6 +61,8 @@ network_g:
   upsampler: 'pixelshuffledirect'
   resi_connection: '1conv'
 
+
+print_network: false
 # path
 path:
   pretrain_network_g: ~
@@ -67,10 +71,9 @@ path:
 
 # training settings
 train:
-  ema_decay: 0.999
   optim_g:
     type: Adam
-    lr: !!float 2e-4
+    lr: !!float 1e-4
     weight_decay: 0
     betas: [0.9, 0.99]
 
@@ -98,8 +101,7 @@ val:
       type: calculate_psnr
       crop_border: 2
       test_y_channel: true
-
-    ssim: # metric name, can be arbitrary
+    ssim:
       type: calculate_ssim
       crop_border: 2
       test_y_channel: true
@@ -117,3 +119,4 @@ logger:
 dist_params:
   backend: nccl
   port: 29500
+
