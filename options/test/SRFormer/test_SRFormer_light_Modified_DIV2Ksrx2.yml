@@ -2,45 +2,45 @@ name: SRFormer_light_Modified_X2
 suffix: ~  # add suffix to saved images
 model_type: SwinIRModel
 scale: 2
-num_gpu: 2  # set num_gpu: 0 for cpu mode
+num_gpu: auto  # set num_gpu: 0 for cpu mode
 manual_seed: 0
 
 datasets:
   test_1:  # the 1st test dataset
     name: Set5
     type: PairedImageDataset
-    dataroot_gt: ../Datasets/SR/Set5/GTmod12
-    dataroot_lq: ../Datasets/SR/Set5/LRbicx2
+    dataroot_gt: ./datasets/Set5/GTmod12
+    dataroot_lq: ./datasets/Set5/LRbicx2
     io_backend:
       type: disk
   test_2: # the 2st test dataset
     name: Set14
     type: PairedImageDataset
-    dataroot_gt: ../Datasets/SR/Set14/GTmod12
-    dataroot_lq: ../Datasets/SR/Set14/LRbicx2
+    dataroot_gt: ./datasets/Set14/GTmod12
+    dataroot_lq: ./datasets/Set14/LRbicx2
     io_backend:
       type: disk
-  # test_3: # the 3st test dataset
-  #   name: B100
-  #   type: PairedImageDataset
-  #   dataroot_gt: ./datasets/B100/HR/x2
-  #   dataroot_lq: ./datasets/B100/LR/LRBI/x2/
-  #   io_backend:
-  #     type: disk
-  # test_4: # the 4st test dataset
-  #   name: Urban100
-  #   type: PairedImageDataset
-  #   dataroot_gt: ./datasets/Urban100/HR/x2/
-  #   dataroot_lq:  ./datasets/Urban100/LR/LRBI/x2/
-  #   io_backend:
-  #     type: disk
-  # test_5: # the 5st test dataset
-  #   name: Manga109
-  #   type: PairedImageDataset
-  #   dataroot_gt:  ./datasets/Manga109/HR/x2/
-  #   dataroot_lq:  ./datasets/Manga109/LR/LRBI/x2/
-  #   io_backend:
-  #     type: disk
+  test_3: # the 3st test dataset
+    name: BSD100
+    type: PairedImageDataset
+    dataroot_gt: ./datasets/BSDS100/GTmod12
+    dataroot_lq: ./datasets/BSDS100/LRbicx2
+    io_backend:
+      type: disk
+  test_4: # the 4st test dataset
+    name: Urban100
+    type: PairedImageDataset
+    dataroot_gt: ./datasets/urban100/GTmod12
+    dataroot_lq: ./datasets/urban100/LRbicx2
+    io_backend:
+      type: disk
+  test_5: # the 5st test dataset
+    name: Manga109
+    type: PairedImageDataset
+    dataroot_gt:  ./datasets/manga109/GTmod12
+    dataroot_lq:  ./datasets/manga109/LRbicx2
+    io_backend:
+      type: disk
 
 
 
@@ -60,17 +60,17 @@ network_g:
   resi_connection: '1conv'
 
 
-save_img: false
+save_img: true
 print_network: false
 
 # path
 path:
-  pretrain_network_g: experiments/train_SRFormer_light_Modified_SRx2_scratch/models/net_g_5000.pth
+  pretrain_network_g: experiments/train_SRFormer_light_Modified_SRx2_scratch/models/net_g_500000.pth
   strict_load_g: true
   param_key_g: params
 
 val:
-  save_img: false
+  save_img: true
   # 对保存的图片添加后缀，如果是None, 则使用exp name
   suffix: ~
 
