@@ -3,7 +3,7 @@
 # basicsr/train.py --launcher pytorch -opt options/train/SRFormer/train_SRFormer_Modified_SRx2_scratch_DIV2K.yml
 
 # general settings
-name: SRFormer_Modified_SRx2_scratch_DIV2K_P48W24_B4G4L1_4x2080ti
+name: SRFormer_Modified_SRx2_scratch_DF2K_P64W22_B4G4L1_4x2080ti
 model_type: SwinIRModel
 
 scale: 2
@@ -21,19 +21,19 @@ datasets:
 #    filename_tmpl: '{}'
 #    io_backend:
 #      type: disk
-    name: DIV2K
+    name: DF2K
     type: PairedImageDataset
     # dataroot_gt: datasets/DIV2K/DIV2K_train_HR
     # dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic/X2
     # (for lmdb)
-    dataroot_gt: datasets/DIV2K/lmdb/DIV2K_train_HR_sub.lmdb
-    dataroot_lq: datasets/DIV2K/lmdb/DIV2K_train_LR_bicubic_X2_sub.lmdb
+    dataroot_gt: datasets/DF2K/lmdb/DF2K_HR_sub.lmdb
+    dataroot_lq: datasets/DF2K/lmdb/DF2K_LR_bicubic_X2_sub.lmdb
     filename_tmpl: '{}'
     io_backend:
       # type: disk
       # (for lmdb)
       type: lmdb
-    gt_size: 96
+    gt_size: 128
     use_hflip: true
     use_rot: true
 
@@ -67,8 +67,8 @@ network_g:
   type: SRFormer_Modified
   upscale: 2
   in_chans: 3
-  img_size: 48
-  window_size: 24
+  img_size: 64
+  window_size: 22
   img_range: 1.
   depths: [6, 6, 6, 6, 6, 6]
   embed_dim: 180

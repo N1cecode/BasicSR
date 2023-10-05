@@ -1,5 +1,5 @@
 # Light weight
-name: train_SwinIR_Modified_light_SRx2_scratch_P48W8_DIV2K_500k_B32G1
+name: 003_SwinIR_Modified_XSharpToAttnK_light_SRx2_DIV2K_1Miters_P48W8_B32G1_2080ti
 model_type: SwinIRModel
 
 scale: 2
@@ -46,7 +46,7 @@ datasets:
 
 # network structures
 network_g:
-  type: SwinIR
+  type: SwinIR_Modified
   upscale: 2
   in_chans: 3
   img_size: 48
@@ -76,10 +76,10 @@ train:
 
   scheduler:
     type: MultiStepLR
-    milestones: [250000, 400000, 450000, 475000]
+    milestones: [500000, 800000, 900000, 950000]
     gamma: 0.5
 
-  total_iter: 500000
+  total_iter: 1000000
   warmup_iter: -1  # no warm up
 
   # losses

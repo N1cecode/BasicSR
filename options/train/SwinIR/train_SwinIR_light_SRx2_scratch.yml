@@ -1,9 +1,5 @@
-# GENERATE TIME: Tue Sep 19 10:34:37 2023
-# CMD:
-# basicsr/train.py --launcher pytorch -opt options/train/SRFormer/train_SRFormer_Modified_SRx2_scratch_DIV2K.yml
-
-# general settings
-name: SRFormer_Modified_SRx2_scratch_DIV2K_P48W24_B4G4L1_4x2080ti
+# Light weight
+name: 000_SwinIR_light_SRx2_DIV2K_1Miters_P48W8_B32G1_2080ti
 model_type: SwinIRModel
 
 scale: 2
@@ -13,71 +9,56 @@ manual_seed: 0
 # dataset and data loader settings
 datasets:
   train:
-#    name: DIV2K
-#    type: PairedImageDataset
-#    dataroot_gt: datasets/DF2K/DIV2K_train_HR_sub
-#    dataroot_lq: datasets/DF2K/DIV2K_train_LR_bicubic_X2_sub
-#    meta_info_file: basicsr/data/meta_info/meta_info_DIV2K800sub_GT.txt
-#    filename_tmpl: '{}'
-#    io_backend:
-#      type: disk
     name: DIV2K
     type: PairedImageDataset
-    # dataroot_gt: datasets/DIV2K/DIV2K_train_HR
-    # dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic/X2
-    # (for lmdb)
-    dataroot_gt: datasets/DIV2K/lmdb/DIV2K_train_HR_sub.lmdb
-    dataroot_lq: datasets/DIV2K/lmdb/DIV2K_train_LR_bicubic_X2_sub.lmdb
+    dataroot_gt: ../Datasets/SR/DIV2K/DIV2K_train_HR_sub
+    dataroot_lq: ../Datasets/SR/DIV2K/DIV2K_train_LR_bicubic/X2_sub
+    meta_info_file: basicsr/data/meta_info/meta_info_DIV2K800sub_GT.txt
     filename_tmpl: '{}'
     io_backend:
-      # type: disk
-      # (for lmdb)
-      type: lmdb
+      type: disk
+
     gt_size: 96
     use_hflip: true
     use_rot: true
 
     # data loader
-    use_shuffle: true
-    num_worker_per_gpu: 8
-    batch_size_per_gpu: 4
+    num_worker_per_gpu: 6
+    batch_size_per_gpu: 32
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
-
 
   val_1:
     name: Set5
     type: PairedImageDataset
-    dataroot_gt: datasets/Set5/GTmod12
-    dataroot_lq: datasets/Set5/LRbicx2
+    dataroot_gt: ../Datasets/SR/Set5/GTmod12
+    dataroot_lq: ../Datasets/SR/Set5/LRbicx2
     io_backend:
       type: disk
 
   val_2:
     name: Set14
     type: PairedImageDataset
-    dataroot_gt: datasets/Set14/GTmod12
-    dataroot_lq: datasets/Set14/LRbicx2
+    dataroot_gt: ../Datasets/SR/Set14/GTmod12
+    dataroot_lq: ../Datasets/SR/Set14/LRbicx2
     io_backend:
       type: disk
 
-
 # network structures
 network_g:
-  type: SRFormer_Modified
+  type: SwinIR
   upscale: 2
   in_chans: 3
   img_size: 48
-  window_size: 24
+  window_size: 8
   img_range: 1.
-  depths: [6, 6, 6, 6, 6, 6]
-  embed_dim: 180
-  num_heads: [6, 6, 6, 6, 6, 6]
+  depths: [6, 6, 6, 6]
+  embed_dim: 60
+  num_heads: [6, 6, 6, 6]
   mlp_ratio: 2
-  upsampler: 'pixelshuffle'
+  upsampler: 'pixelshuffledirect'
   resi_connection: '1conv'
 
-print_network: false
 # path
 path:
   pretrain_network_g: ~
@@ -86,18 +67,19 @@ path:
 
 # training settings
 train:
+  ema_decay: 0.999
   optim_g:
     type: Adam
-    lr: !!float 1e-4
+    lr: !!float 2e-4
     weight_decay: 0
     betas: [0.9, 0.99]
 
   scheduler:
     type: MultiStepLR
-    milestones: [250000, 400000, 450000, 475000]
+    milestones: [500000, 800000, 900000, 950000]
     gamma: 0.5
 
-  total_iter: 500000
+  total_iter: 1000000
   warmup_iter: -1  # no warm up
 
   # losses
@@ -116,7 +98,8 @@ val:
       type: calculate_psnr
       crop_border: 2
       test_y_channel: true
-    ssim:
+
+    ssim: # metric name, can be arbitrary
       type: calculate_ssim
       crop_border: 2
       test_y_channel: true
@@ -134,4 +117,3 @@ logger:
 dist_params:
   backend: nccl
   port: 29500
-
