@@ -1,5 +1,5 @@
 # Light weight
-name: ClassicalX2_001_SwinIR_dwconvs+KV_MSA+(CAB_dwconv)_ConvFFN_DIV2K_1Miters_P48W8_LR2e-4_B6G2_2080ti
+name: ClassicalX2_002_SwinIR_SFB_dwconvs+KV_MSA+(CAB_dwconv)_ConvFFN_DIV2K_1Miters_P48W8_LR2e-4_B12G1_4090
 model_type: SwinIRModel
 
 scale: 2
@@ -24,7 +24,7 @@ datasets:
 
     # data loader
     num_worker_per_gpu: 8
-    batch_size_per_gpu: 16
+    batch_size_per_gpu: 12
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
