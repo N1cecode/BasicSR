@@ -1,8 +1,8 @@
 # Light weight
-name: LightX2_000_SwinIR_DIV2K_1Miters_P48W8_B32G1_2080ti
+name: ClassicalX4_001_SwinIR_dwconvs_to_XSharpToAttnKV_WMSA_with_SFB_ConvFFN_DIV2K_1Miters_P48W8_LR2e-4_B16G2_2080ti
 model_type: SwinIRModel
 
-scale: 2
+scale: 4
 num_gpu: auto
 manual_seed: 3407
 
@@ -12,19 +12,19 @@ datasets:
     name: DIV2K
     type: PairedImageDataset
     dataroot_gt: ../Datasets/SR/DIV2K/DIV2K_train_HR_sub
-    dataroot_lq: ../Datasets/SR/DIV2K/DIV2K_train_LR_bicubic/X2_sub
+    dataroot_lq: ../Datasets/SR/DIV2K/DIV2K_train_LR_bicubic/X4_sub
     meta_info_file: basicsr/data/meta_info/meta_info_DIV2K800sub_GT.txt
     filename_tmpl: '{}'
     io_backend:
       type: disk
 
-    gt_size: 96
+    gt_size: 192
     use_hflip: true
     use_rot: true
 
     # data loader
-    num_worker_per_gpu: 6
-    batch_size_per_gpu: 32
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 4
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
@@ -32,7 +32,7 @@ datasets:
     name: Set5
     type: PairedImageDataset
     dataroot_gt: ../Datasets/SR/Set5/GTmod12
-    dataroot_lq: ../Datasets/SR/Set5/LRbicx2
+    dataroot_lq: ../Datasets/SR/Set5/LRbicx4
     io_backend:
       type: disk
 
@@ -40,23 +40,24 @@ datasets:
     name: Set14
     type: PairedImageDataset
     dataroot_gt: ../Datasets/SR/Set14/GTmod12
-    dataroot_lq: ../Datasets/SR/Set14/LRbicx2
+    dataroot_lq: ../Datasets/SR/Set14/LRbicx4
     io_backend:
       type: disk
 
+
 # network structures
 network_g:
-  type: SwinIR
-  upscale: 2
+  type: SwinIR_Modified
+  upscale: 4
   in_chans: 3
   img_size: 48
   window_size: 8
   img_range: 1.
-  depths: [6, 6, 6, 6]
-  embed_dim: 60
-  num_heads: [6, 6, 6, 6]
+  depths: [6, 6, 6, 6, 6, 6]
+  embed_dim: 180
+  num_heads: [6, 6, 6, 6, 6, 6]
   mlp_ratio: 2
-  upsampler: 'pixelshuffledirect'
+  upsampler: 'pixelshuffle'
   resi_connection: '1conv'
 
 # path
@@ -96,12 +97,12 @@ val:
   metrics:
     psnr: # metric name, can be arbitrary
       type: calculate_psnr
-      crop_border: 2
+      crop_border: 4
       test_y_channel: true
 
     ssim: # metric name, can be arbitrary
       type: calculate_ssim
-      crop_border: 2
+      crop_border: 4
       test_y_channel: true
 
 # logging settings

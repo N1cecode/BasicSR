@@ -1,14 +1,62 @@
-# Modified from https://github.com/JingyunLiang/SwinIR
-# SwinIR: Image Restoration Using Swin Transformer, https://arxiv.org/abs/2108.10257
-# Originally Written by Ze Liu, Modified by Jingyun Liang.
-
 import math
 import torch
 import torch.nn as nn
 import torch.utils.checkpoint as checkpoint
 
 from basicsr.utils.registry import ARCH_REGISTRY
-from .arch_util import to_2tuple, trunc_normal_
+from basicsr.archs.arch_util import to_2tuple, trunc_normal_
+
+
+class dwconv(nn.Module):
+    def __init__(self,hidden_features):
+        super(dwconv, self).__init__()
+        self.depthwise_conv = nn.Sequential(
+            nn.Conv2d(hidden_features, hidden_features, kernel_size=5, stride=1, padding=2, dilation=1,
+                      groups=hidden_features), nn.GELU())
+        self.hidden_features = hidden_features
+    def forward(self,x,x_size):
+        x = x.transpose(1, 2).contiguous().view(x.shape[0], self.hidden_features, x_size[0], x_size[1])  # b Ph*Pw c
+        x = self.depthwise_conv(x)
+        x = x.flatten(2).transpose(1, 2).contiguous()
+        return x
+
+
+class ChannelAttention(nn.Module):
+    """Channel attention used in RCAN.
+    Args:
+        num_feat (int): Channel number of intermediate features.
+        squeeze_factor (int): Channel squeeze factor. Default: 16.
+    """
+
+    def __init__(self, num_feat, squeeze_factor=16):
+        super(ChannelAttention, self).__init__()
+        self.attention = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(num_feat, num_feat // squeeze_factor, 1, padding=0, groups=num_feat//squeeze_factor),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(num_feat // squeeze_factor, num_feat, 1, padding=0, groups=num_feat//squeeze_factor),
+            nn.Sigmoid())
+
+    def forward(self, x):
+        y = self.attention(x)
+        return x * y
+
+
+class CAB(nn.Module):
+
+    def __init__(self, num_feat, compress_ratio=3, squeeze_factor=30):
+        super(CAB, self).__init__()
+
+        self.cab = nn.Sequential(
+            nn.Conv2d(num_feat, num_feat // compress_ratio, 3, 1, 1, groups=num_feat//compress_ratio),
+            nn.GELU(),
+            nn.Conv2d(num_feat // compress_ratio, num_feat, 3, 1, 1, groups=num_feat//compress_ratio),
+            ChannelAttention(num_feat, squeeze_factor)
+            )
+
+    def forward(self, x):
+        return self.cab(x)
+
 
 class Sobel(nn.Module):
     def __init__(self):
@@ -38,9 +86,9 @@ class Sobel(nn.Module):
         magnitude = torch.sqrt(grad_x**2 + grad_y**2)
         return magnitude
 
-class ConvSkip(nn.Module):
+class EdgeExtraction(nn.Module):
     def __init__(self, dim):
-        super(ConvSkip, self).__init__()
+        super(EdgeExtraction, self).__init__()
 
         self.hpf = Sobel()
         self.conv = nn.Conv2d(3, dim, kernel_size=3, stride=1, padding=1, bias=True)
@@ -48,6 +96,17 @@ class ConvSkip(nn.Module):
     def forward(self, x):
         x = self.hpf(x)
         x = self.conv(x)
+        return x
+    
+class EdgeConv(nn.Module):
+    def __init__(self, dim):
+        super(EdgeConv, self).__init__()
+        self.dwconv = nn.Conv2d(dim, dim, kernel_size=5, stride=1, padding=2, dilation=1, groups=dim)
+        self.gelu = nn.GELU()
+
+    def forward(self, x):
+        x = self.dwconv(x)
+        x = self.gelu(x)
         return x
 
 def drop_path(x, drop_prob: float = 0., training: bool = False):
@@ -80,19 +139,20 @@ class DropPath(nn.Module):
 
 
 class Mlp(nn.Module):
-
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
         out_features = out_features or in_features
         hidden_features = hidden_features or in_features
         self.fc1 = nn.Linear(in_features, hidden_features)
         self.act = act_layer()
+        self.dwconv = dwconv(hidden_features=hidden_features)
         self.fc2 = nn.Linear(hidden_features, out_features)
         self.drop = nn.Dropout(drop)
 
-    def forward(self, x):
+    def forward(self, x, x_size):
         x = self.fc1(x)
         x = self.act(x)
+        x = x + self.dwconv(x, x_size)
         x = self.drop(x)
         x = self.fc2(x)
         x = self.drop(x)
@@ -171,8 +231,8 @@ class WindowAttention(nn.Module):
         relative_position_index = relative_coords.sum(-1)  # Wh*Ww, Wh*Ww
         self.register_buffer('relative_position_index', relative_position_index)
 
-        self.qv = nn.Linear(dim, dim * 2, bias=qkv_bias)
-        self.k = nn.Linear(dim, dim, bias=qkv_bias)
+        self.q = nn.Linear(dim, dim, bias=qkv_bias)
+        self.kv = nn.Linear(dim, dim * 2, bias=qkv_bias)
         self.attn_drop = nn.Dropout(attn_drop)
         self.proj = nn.Linear(dim, dim)
 
@@ -188,10 +248,11 @@ class WindowAttention(nn.Module):
             mask: (0/-inf) mask with shape of (num_windows, Wh*Ww, Wh*Ww) or None
         """
         b_, n, c = x.shape
-        qv = self.qv(x).reshape(b_, n, 2, self.num_heads, c // self.num_heads).permute(2, 0, 3, 1, 4)
-        k = self.k(x_sharp).reshape(b_, n, 1, self.num_heads, c // self.num_heads).permute(2, 0, 3, 1, 4)
-        q, v= qv[0], qv[1]  # make torchscript happy (cannot use tensor as tuple)
-        k = k[0]
+        q = self.q(x).reshape(b_, n, 1, self.num_heads, c // self.num_heads).permute(2, 0, 3, 1, 4)
+        kv = self.kv(x_sharp).reshape(b_, n, 2, self.num_heads, c // self.num_heads).permute(2, 0, 3, 1, 4)
+
+        q = q[0]
+        k, v= kv[0], kv[1]  # make torchscript happy (cannot use tensor as tuple)
 
         q = q * self.scale
         attn = (q @ k.transpose(-2, -1))
@@ -233,6 +294,15 @@ class WindowAttention(nn.Module):
         return flops
 
 
+class LearnableScale(nn.Module):
+    def __init__(self, initial_value=1.0):
+        super(LearnableScale, self).__init__()
+        self.scale = nn.Parameter(torch.tensor([initial_value], requires_grad=True))
+        
+    def forward(self):
+        return self.scale
+
+
 class SwinTransformerBlock(nn.Module):
     r""" Swin Transformer Block.
 
@@ -258,6 +328,7 @@ class SwinTransformerBlock(nn.Module):
                  num_heads,
                  window_size=7,
                  shift_size=0,
+                 conv_scale=0.01,
                  mlp_ratio=4.,
                  qkv_bias=True,
                  qk_scale=None,
@@ -289,6 +360,10 @@ class SwinTransformerBlock(nn.Module):
             attn_drop=attn_drop,
             proj_drop=drop)
 
+
+        self.conv_scale = LearnableScale(initial_value=0.5)
+        self.conv_block = CAB(num_feat=dim, compress_ratio=3, squeeze_factor=30)
+        
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
@@ -331,6 +406,10 @@ class SwinTransformerBlock(nn.Module):
         x = self.norm1(x)
         x_sharp = (x + x_edge).view(b, h, w, c)
         x = x.view(b, h, w, c)
+        
+        # Conv_X
+        conv_x = self.conv_block(x.permute(0, 3, 1, 2))
+        conv_x = conv_x.permute(0, 2, 3, 1).contiguous().view(b, h * w, c)
 
         # cyclic shift
         if self.shift_size > 0:
@@ -364,8 +443,8 @@ class SwinTransformerBlock(nn.Module):
         x = x.view(b, h * w, c)
 
         # FFN
-        x = shortcut + self.drop_path(x)
-        x = x + self.drop_path(self.mlp(self.norm2(x)))
+        x = shortcut + self.drop_path(x) + conv_x * self.conv_scale.scale
+        x = x + self.drop_path(self.mlp(self.norm2(x), x_size))
 
         return x
 
@@ -683,7 +762,7 @@ class PatchUnEmbed(nn.Module):
         self.embed_dim = embed_dim
 
     def forward(self, x, x_size):
-        x = x.transpose(1, 2).view(x.shape[0], self.embed_dim, x_size[0], x_size[1])  # b Ph*Pw c
+        x = x.transpose(1, 2).contiguous().view(x.shape[0], self.embed_dim, x_size[0], x_size[1])  # b Ph*Pw c
         return x
 
     def flops(self):
@@ -804,7 +883,7 @@ class SwinIR_Modified(nn.Module):
 
         # ------------------------- 1, shallow feature extraction ------------------------- #
         self.conv_first = nn.Conv2d(num_in_ch, embed_dim, 3, 1, 1)
-        self.conv_skip = ConvSkip(embed_dim)
+        self.edge_ex = EdgeExtraction(embed_dim)
 
         # ------------------------- 2, deep feature extraction ------------------------- #
         self.num_layers = len(depths)
@@ -845,6 +924,7 @@ class SwinIR_Modified(nn.Module):
 
         # build Residual Swin Transformer blocks (RSTB)
         self.layers = nn.ModuleList()
+        self.edge_convs = nn.ModuleList()
         for i_layer in range(self.num_layers):
             layer = RSTB(
                 dim=embed_dim,
@@ -865,6 +945,8 @@ class SwinIR_Modified(nn.Module):
                 patch_size=patch_size,
                 resi_connection=resi_connection)
             self.layers.append(layer)
+            edge_conv = EdgeConv(embed_dim)
+            self.edge_convs.append(edge_conv)
         self.norm = norm_layer(self.num_features)
 
         # build the last conv layer in deep feature extraction
@@ -924,13 +1006,16 @@ class SwinIR_Modified(nn.Module):
     def forward_features(self, x, x_edge):
         x_size = (x.shape[2], x.shape[3])
         x = self.patch_embed(x)
-        x_edge = self.patch_embed(x_edge)
+        
         if self.ape:
             x = x + self.absolute_pos_embed
         x = self.pos_drop(x)
 
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
+            x_edge = self.edge_convs[i](x_edge)
+            x_edge = self.patch_embed(x_edge)
             x = layer(x, x_size, x_edge)
+            x_edge = self.patch_unembed(x_edge, x_size)
 
         x = self.norm(x)  # b seq_len c
         x = self.patch_unembed(x, x_size)
@@ -941,7 +1026,7 @@ class SwinIR_Modified(nn.Module):
         self.mean = self.mean.type_as(x)
         x = (x - self.mean) * self.img_range
 
-        x_edge = self.conv_skip(x)
+        x_edge = self.edge_ex(x)
 
         if self.upsampler == 'pixelshuffle':
             # for classical SR

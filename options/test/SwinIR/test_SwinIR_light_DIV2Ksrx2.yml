@@ -1,4 +1,4 @@
-name: SRFormer_Modified_DIV2k_P48W24_B4G4L1_X2
+name: SwinIR_light_X2_1Miters_2080ti
 suffix: ~  # add suffix to saved images
 model_type: SwinIRModel
 scale: 2
@@ -16,8 +16,8 @@ datasets:
   test_2: # the 2st test dataset
     name: Set14
     type: PairedImageDataset
-    dataroot_gt: ./datasets/Test/GTmod12
-    dataroot_lq: ./datasets/Test/LRbicx2
+    dataroot_gt: ./datasets/Set14/GTmod12
+    dataroot_lq: ./datasets/Set14/LRbicx2
     io_backend:
       type: disk
   test_3: # the 3st test dataset
@@ -43,20 +43,21 @@ datasets:
       type: disk
 
 
+
 # network structures
 network_g:
-  type: SRFormer_Modified
+  type: SwinIR
   upscale: 2
   in_chans: 3
   img_size: 48
-  window_size: 24
-  img_range: 1.0
-  depths: [6, 6, 6, 6, 6, 6]
-  embed_dim: 180
-  num_heads: [6, 6, 6, 6, 6, 6]
+  window_size: 8
+  img_range: 1.
+  depths: [6, 6, 6, 6]
+  embed_dim: 60
+  num_heads: [6, 6, 6, 6]
   mlp_ratio: 2
-  upsampler: pixelshuffle
-  resi_connection: 1conv
+  upsampler: 'pixelshuffledirect'
+  resi_connection: '1conv'
 
 
 save_img: true
@@ -64,7 +65,7 @@ print_network: false
 
 # path
 path:
-  pretrain_network_g: experiments/SRFormer_Modified_SRx2_scratch_DIV2K_P48W24_B4G4L1_4x2080ti/models/net_g_500000.pth
+  pretrain_network_g: experiments/000_SwinIR_light_SRx2_DIV2K_1Miters_P48W8_B32G1_2080ti_archived_20231009_222605/models/net_g_1000000.pth
   strict_load_g: true
   param_key_g: params
 

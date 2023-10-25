@@ -64,7 +64,7 @@ print_network: false
 
 # path
 path:
-  pretrain_network_g: experiments/SRFormer_Modified_SRx2_scratch_DIV2K_P48W24_B4G4L1_4x2080ti/models/net_g_500000.pth
+  pretrain_network_g: experiments/SRFormer_Modified_SRx2_scratch_DIV2K_P48W24_B4G4L1_4x2080ti/models/net_g_475000.pth
   strict_load_g: true
   param_key_g: params
 

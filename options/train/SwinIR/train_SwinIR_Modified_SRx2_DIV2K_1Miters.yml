@@ -1,5 +1,5 @@
 # Light weight
-name: LightX2_000_SwinIR_DIV2K_1Miters_P48W8_B32G1_2080ti
+name: ClassicalX2_001_SwinIR_dwconvs+KV_MSA+(CAB_dwconv)_ConvFFN_DIV2K_1Miters_P48W8_LR2e-4_B6G2_2080ti
 model_type: SwinIRModel
 
 scale: 2
@@ -11,8 +11,8 @@ datasets:
   train:
     name: DIV2K
     type: PairedImageDataset
-    dataroot_gt: ../Datasets/SR/DIV2K/DIV2K_train_HR_sub
-    dataroot_lq: ../Datasets/SR/DIV2K/DIV2K_train_LR_bicubic/X2_sub
+    dataroot_gt: datasets/DIV2K/DIV2K_train_HR_sub
+    dataroot_lq: datasets/DIV2K/DIV2K_train_LR_bicubic/X2_sub
     meta_info_file: basicsr/data/meta_info/meta_info_DIV2K800sub_GT.txt
     filename_tmpl: '{}'
     io_backend:
@@ -23,40 +23,41 @@ datasets:
     use_rot: true
 
     # data loader
-    num_worker_per_gpu: 6
-    batch_size_per_gpu: 32
+    num_worker_per_gpu: 8
+    batch_size_per_gpu: 6
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
   val_1:
     name: Set5
     type: PairedImageDataset
-    dataroot_gt: ../Datasets/SR/Set5/GTmod12
-    dataroot_lq: ../Datasets/SR/Set5/LRbicx2
+    dataroot_gt: datasets/Set5/GTmod12
+    dataroot_lq: datasets/Set5/LRbicx2
     io_backend:
       type: disk
 
   val_2:
     name: Set14
     type: PairedImageDataset
-    dataroot_gt: ../Datasets/SR/Set14/GTmod12
-    dataroot_lq: ../Datasets/SR/Set14/LRbicx2
+    dataroot_gt: datasets/Set14/GTmod12
+    dataroot_lq: datasets/Set14/LRbicx2
     io_backend:
       type: disk
 
+
 # network structures
 network_g:
-  type: SwinIR
+  type: SwinIR_Modified
   upscale: 2
   in_chans: 3
   img_size: 48
   window_size: 8
   img_range: 1.
-  depths: [6, 6, 6, 6]
-  embed_dim: 60
-  num_heads: [6, 6, 6, 6]
+  depths: [6, 6, 6, 6, 6, 6]
+  embed_dim: 180
+  num_heads: [6, 6, 6, 6, 6, 6]
   mlp_ratio: 2
-  upsampler: 'pixelshuffledirect'
+  upsampler: 'pixelshuffle'
   resi_connection: '1conv'
 
 # path
