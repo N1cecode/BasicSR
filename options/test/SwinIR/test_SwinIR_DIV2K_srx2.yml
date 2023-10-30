@@ -1,4 +1,4 @@
-name: ClassicalX2_002_SwinIR_dwconvs+KV_MSA+(CAB_dwconv)_ConvFFN_DIV2K_1Miters_P48W8_LR2e-4_B12G1_4090
+name: SwinIR_DIV2k_P48W8_X2_Local
 suffix: ~  # add suffix to saved images
 model_type: SwinIRModel
 scale: 2
@@ -45,7 +45,7 @@ datasets:
 
 # network structures
 network_g:
-  type: SwinIR_Modified
+  type: SwinIR
   upscale: 2
   in_chans: 3
   img_size: 48
@@ -64,7 +64,7 @@ print_network: false
 
 # path
 path:
-  pretrain_network_g: experiments/ClassicalX2_001_SwinIR_dwconvs+KV_MSA+(CAB_dwconv)_ConvFFN_DIV2K_1Miters_P48W8_LR2e-4_B6G2_2080ti/models/net_g_625000.pth
+  pretrain_network_g: experiments/ClassicalX2_000_SwinIR_P48W8_DIV2K_1Miters_B8G2_2080ti/models/net_g_625000.pth
   strict_load_g: true
   param_key_g: params
 
