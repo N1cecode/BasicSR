@@ -450,7 +450,7 @@ class SwinTransformerBlock(nn.Module):
             proj_drop=drop)
 
 
-        self.conv_scale = LearnableScale(initial_value=0.5)
+        self.conv_scale = LearnableScale(initial_value=conv_scale)
         self.conv_block = CAB(num_feat=dim, compress_ratio=3, squeeze_factor=30)
         
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
@@ -634,6 +634,7 @@ class BasicLayer(nn.Module):
                  mlp_ratio=4.,
                  qkv_bias=True,
                  qk_scale=None,
+                 conv_scale=0.01,
                  drop=0.,
                  attn_drop=0.,
                  drop_path=0.,
@@ -658,6 +659,7 @@ class BasicLayer(nn.Module):
                 mlp_ratio=mlp_ratio,
                 qkv_bias=qkv_bias,
                 qk_scale=qk_scale,
+                conv_scale=conv_scale,
                 drop=drop,
                 attn_drop=attn_drop,
                 drop_path=drop_path[i] if isinstance(drop_path, list) else drop_path,
@@ -724,6 +726,7 @@ class RSTB(nn.Module):
                  mlp_ratio=4.,
                  qkv_bias=True,
                  qk_scale=None,
+                 conv_scale=0.01,
                  drop=0.,
                  attn_drop=0.,
                  drop_path=0.,
@@ -747,6 +750,7 @@ class RSTB(nn.Module):
             mlp_ratio=mlp_ratio,
             qkv_bias=qkv_bias,
             qk_scale=qk_scale,
+            conv_scale=conv_scale,
             drop=drop,
             attn_drop=attn_drop,
             drop_path=drop_path,
@@ -947,6 +951,7 @@ class SwinIR_Modified(nn.Module):
                  mlp_ratio=4.,
                  qkv_bias=True,
                  qk_scale=None,
+                 conv_scale=0.01,
                  drop_rate=0.,
                  attn_drop_rate=0.,
                  drop_path_rate=0.1,
@@ -1026,6 +1031,7 @@ class SwinIR_Modified(nn.Module):
                 mlp_ratio=self.mlp_ratio,
                 qkv_bias=qkv_bias,
                 qk_scale=qk_scale,
+                conv_scale=conv_scale,
                 drop=drop_rate,
                 attn_drop=attn_drop_rate,
                 drop_path=dpr[sum(depths[:i_layer]):sum(depths[:i_layer + 1])],  # no impact on SR results
