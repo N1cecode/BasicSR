@@ -1,5 +1,5 @@
 # Light weight
-name: ClassicalX2_008_Pretrained_SwinIR_SFB_dwconvs+KV_MSA+(CAB_dwconv)_ConvFFN_DIV2K_1Miters_P48W8_LR2e-4_B12G1_4090_Cos
+name: ClassicalX2_008_Pretrained_SwinIR_SFB_dwconvs+KV_MSA+(CAB_dwconv)_scale0.1_ConvFFN_DIV2K_1Miters_P48W8_LR2e-4_B12G1_4090_Cos
 model_type: SwinIRModel
 
 scale: 2
@@ -80,6 +80,7 @@ network_g:
   depths: [6, 6, 6, 6, 6, 6]
   embed_dim: 180
   num_heads: [6, 6, 6, 6, 6, 6]
+  conv_scale: 0.1
   mlp_ratio: 2
   upsampler: 'pixelshuffle'
   resi_connection: 'SFB'
