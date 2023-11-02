@@ -1,5 +1,5 @@
 # Light weight
-name: ClassicalX2_004_Pretrained_SwinIR_dwconvs+KV_MSA+(CAB_dwconv)_ConvFFN_DIV2K_1Miters_P48W8_LR2e-4_B12G1_4090
+name: ClassicalX2_008_Pretrained_SwinIR_SFB_dwconvs+KV_MSA+(CAB_dwconv)_ConvFFN_DIV2K_1Miters_P48W8_LR2e-4_B12G1_4090_Cos
 model_type: SwinIRModel
 
 scale: 2
@@ -109,7 +109,7 @@ train:
 
   # losses
   pixel_opt:
-    type: L1Loss
+    type: CharbonnierLossColor
     loss_weight: 1.0
     reduction: mean
 
