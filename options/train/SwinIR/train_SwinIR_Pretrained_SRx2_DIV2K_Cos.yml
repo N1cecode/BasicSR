@@ -1,5 +1,5 @@
 # Light weight
-name: ClassicalX2_009_Pretrained_SwinIR_ConvScale0.5_dwconvs+KV_MSA+(CAB_dwconv)_ConvFFN_DIV2K_P48W8_LR2e-4_B6G1_2080ti_cos
+name: ClassicalX2_010_Pretrained_SwinIR_Res_DIV2K_P48W8_LR2e-4_B8G1_2080ti_cos
 model_type: SwinIRModel
 
 scale: 2
@@ -24,7 +24,7 @@ datasets:
 
     # data loader
     num_worker_per_gpu: 8
-    batch_size_per_gpu: 6
+    batch_size_per_gpu: 8
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
 
@@ -71,7 +71,7 @@ datasets:
 
 # network structures
 network_g:
-  type: SwinIR_Modified
+  type: SwinIR_Res
   upscale: 2
   in_chans: 3
   img_size: 48
@@ -81,7 +81,7 @@ network_g:
   embed_dim: 180
   num_heads: [6, 6, 6, 6, 6, 6]
   mlp_ratio: 2
-  conv_scale: 0.5
+  # conv_scale: 0.5
   upsampler: 'pixelshuffle'
   resi_connection: '1conv'
 
